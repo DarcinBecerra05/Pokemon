@@ -22,7 +22,7 @@ class HomePage extends CellsPage {
     this.pokemonList = [];
     this.fetchPokemonData();
   }
-
+  /***
   async fetchPokemonData() {
     try {
       const response = await fetch('https://pokeapi.co/api/v2/pokemon?offset=131&limit=5');
@@ -33,6 +33,36 @@ class HomePage extends CellsPage {
         )
       );
       this.pokemonList = detailedData;
+      console.log(this.pokemonList);
+    } catch (error) {
+      console.error('Error fetching Pokémon data:', error);
+    }
+  }
+  */
+  async fetchPokemonData() {
+    try {
+      // Obtener todos los Pokémon (puedes ajustar el offset y limit si es necesario)
+      const response = await fetch('https://pokeapi.co/api/v2/pokemon?offset=0&limit=150');
+      const data = await response.json();
+
+      // Obtener detalles de cada Pokémon
+      const detailedData = await Promise.all(
+        data.results.map((pokemon) =>
+          fetch(pokemon.url).then((res) => res.json())
+        )
+      );
+
+      // Filtrar los Pokémon base (sin evoluciones)
+      const basePokemon = await Promise.all(
+        detailedData.map(async(pokemon) => {
+          const speciesResponse = await fetch(pokemon.species.url);
+          const speciesData = await speciesResponse.json();
+          return speciesData.evolves_from_species ? null : pokemon;
+        })
+      );
+
+      // Filtrar los nulls de la lista final
+      this.pokemonList = basePokemon.filter((pokemon) => pokemon !== null);
       console.log(this.pokemonList);
     } catch (error) {
       console.error('Error fetching Pokémon data:', error);
@@ -80,7 +110,6 @@ class HomePage extends CellsPage {
   }
 
   goToEvolution() {
-    this.publish('evolution-channel', this.totals);
     this.navigate('evolution');
   }
 
